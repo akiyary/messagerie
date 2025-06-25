@@ -24,19 +24,23 @@ def sauvegarder_utilisateurs(users):
 # === ROUTES MESSAGES ===
 @app.route("/send", methods=["POST"])
 def send():
+    if not request.is_json:
+        return jsonify({"error": "Content-Type must be application/json"}), 400
     data = request.get_json()
     if not data or "from" not in data or "text" not in data:
-        return {"error": "Invalid data"}, 400
+        return jsonify({"error": "Invalid data"}), 400
     messages.append({"from": data["from"], "text": data["text"]})
-    return {"status": "ok"}
+    return jsonify({"status": "ok"}), 200
 
 @app.route("/messages", methods=["GET"])
 def get_messages():
-    return jsonify(messages)
+    return jsonify(messages), 200
 
 # === ROUTES UTILISATEURS ===
 @app.route("/register", methods=["POST"])
 def register():
+    if not request.is_json:
+        return jsonify({"success": False, "message": "Requête invalide"}), 400
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
@@ -53,19 +57,25 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
+    if not request.is_json:
+        return jsonify({"success": False, "message": "Requête invalide"}), 400
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
+    if not username or not password:
+        return jsonify({"success": False, "message": "Champs manquants"}), 400
+
     users = charger_utilisateurs()
 
     if username in users and users[username]["password"] == password:
         return jsonify({
             "success": True,
             "role": users[username]["role"]
-        })
+        }), 200
+
     return jsonify({"success": False, "message": "Identifiants invalides"}), 401
 
 # === MAIN ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
