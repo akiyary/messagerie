@@ -3,13 +3,12 @@ import json
 import os
 
 app = Flask(__name__)
-
 USERS_FILE = "users.json"
 
-# Fonction pour charger les utilisateurs
+# Fonction robuste de chargement
 def charger_utilisateurs():
     if not os.path.exists(USERS_FILE) or os.path.getsize(USERS_FILE) == 0:
-        # Créer un fichier avec un compte admin par défaut
+        # Fichier inexistant ou vide → on initialise
         users = {
             "admin": {"password": "admin123", "role": "admin"}
         }
@@ -19,9 +18,12 @@ def charger_utilisateurs():
 
     try:
         with open(USERS_FILE, "r") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        print("⚠️ Fichier JSON corrompu. Réinitialisation...")
+            contenu = f.read().strip()
+            if not contenu:
+                raise json.JSONDecodeError("Empty file", "", 0)
+            return json.loads(contenu)
+    except (json.JSONDecodeError, ValueError):
+        # JSON invalide → on réinitialise proprement
         users = {
             "admin": {"password": "admin123", "role": "admin"}
         }
@@ -29,16 +31,13 @@ def charger_utilisateurs():
             json.dump(users, f, indent=2)
         return users
 
-# Fonction pour sauvegarder les utilisateurs
 def sauvegarder_utilisateurs(users):
     with open(USERS_FILE, "w") as f:
         json.dump(users, f, indent=2)
 
-# Route pour l'inscription
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-
     username = data.get("username")
     password = data.get("password")
 
@@ -55,7 +54,7 @@ def register():
 
     return jsonify({"success": True, "message": "Inscription réussie"}), 201
 
-# Lancer le serveur
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
