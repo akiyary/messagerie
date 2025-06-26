@@ -42,6 +42,11 @@ def send_message():
     sauvegarder_messages(messages)
     return jsonify({"success": True, "message": "Message envoyé"}), 201
 
+# === KEEP-ALIVE ===
+@app.route("/ping", methods=["GET"])
+def ping():
+    return jsonify({"message": "pong"}), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 
