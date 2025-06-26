@@ -1,17 +1,16 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import json
 import os
 
 app = Flask(__name__)
+CORS(app)
+
 USERS_FILE = "users.json"
 
-# Fonction robuste de chargement
 def charger_utilisateurs():
     if not os.path.exists(USERS_FILE) or os.path.getsize(USERS_FILE) == 0:
-        # Fichier inexistant ou vide → on initialise
-        users = {
-            "admin": {"password": "admin123", "role": "admin"}
-        }
+        users = {"admin": {"password": "admin123", "role": "admin"}}
         with open(USERS_FILE, "w") as f:
             json.dump(users, f, indent=2)
         return users
@@ -23,10 +22,7 @@ def charger_utilisateurs():
                 raise json.JSONDecodeError("Empty file", "", 0)
             return json.loads(contenu)
     except (json.JSONDecodeError, ValueError):
-        # JSON invalide → on réinitialise proprement
-        users = {
-            "admin": {"password": "admin123", "role": "admin"}
-        }
+        users = {"admin": {"password": "admin123", "role": "admin"}}
         with open(USERS_FILE, "w") as f:
             json.dump(users, f, indent=2)
         return users
