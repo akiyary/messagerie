@@ -9,9 +9,8 @@ CORS(app)
 MESSAGES_FILE = "messages.json"
 
 def charger_messages():
-    # Vérifie l'existence et la validité du fichier
     if not os.path.exists(MESSAGES_FILE) or os.path.getsize(MESSAGES_FILE) == 0:
-        with open(MESSAGES_FILE, "w") as f:
+        with open(MESSAGES_FILE, "w", encoding="utf-8") as f:
             json.dump([], f)
         return []
 
@@ -58,7 +57,18 @@ def send_message():
 def ping():
     return jsonify({"message": "pong"}), 200
 
+# === ROUTE TEMPORAIRE POUR RÉINITIALISER messages.json ===
+@app.route("/reset", methods=["GET"])
+def reset_messages():
+    try:
+        with open(MESSAGES_FILE, "w", encoding="utf-8") as f:
+            json.dump([], f)
+        return jsonify({"success": True, "message": "messages.json réinitialisé"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
 
 
