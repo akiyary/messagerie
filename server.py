@@ -97,18 +97,4 @@ def send():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)    pseudo = data.get("from")
-    texte = data.get("text")
-
-    marquer_actif(pseudo)  # <-- ligne à ajouter dans ta route /send actuelle
-
-    # ... ta logique existante pour stocker/renvoyer le message ...
-    return jsonify({"success": True})
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
