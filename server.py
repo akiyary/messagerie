@@ -1,68 +1,50 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
-import json
-import os
 
 app = Flask(__name__)
-CORS(app)
 
-MESSAGES_FILE = "messages.json"
-USERS_FILE = "users.json"
-DELAI_EN_LIGNE = timedelta(seconds=15)   # affiché "en ligne" si heartbeat récent
-EXPIRATION = timedelta(seconds=25)       # supprimé si aucun heartbeat depuis ce délai
+# --- stockage en mémoire (à remplacer par ta vraie logique / DB si besoin) ---
+# clé = pseudo, valeur = dernier moment où on a vu ce pseudo actif
+utilisateurs_vus = {}
 
-
-def charger_messages():
-    if not os.path.exists(MESSAGES_FILE) or os.path.getsize(MESSAGES_FILE) == 0:
-        with open(MESSAGES_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-        return []
-
-    try:
-        with open(MESSAGES_FILE, "r", encoding="utf-8") as f:
-            contenu = f.read().strip()
-            if not contenu:
-                return []
-            return json.loads(contenu)
-    except json.JSONDecodeError as e:
-        print(f"[ERREUR JSON] Fichier mal formé : {e}")
-        # Réinitialise le fichier corrompu
-        with open(MESSAGES_FILE, "w", encoding="utf-8") as f:
-            json.dump([], f)
-        return []
-    except Exception as e:
-        print(f"[ERREUR] Lecture impossible : {e}")
-        return []
+DELAI_EN_LIGNE = timedelta(seconds=30)  # inactif après 30s sans activité
 
 
-def sauvegarder_messages(messages):
-    try:
-        with open(MESSAGES_FILE, "w", encoding="utf-8") as f:
-            json.dump(messages, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"[ERREUR] Écriture impossible : {e}")
+def marquer_actif(pseudo):
+    """Appelle cette fonction chaque fois qu'un pseudo envoie un message
+    (par ex. dans ta route /send existante), pour le compter comme utilisateur."""
+    if pseudo:
+        utilisateurs_vus[pseudo] = datetime.utcnow()
 
 
-def charger_users():
-    if not os.path.exists(USERS_FILE) or os.path.getsize(USERS_FILE) == 0:
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump({}, f)
-        return {}
+@app.route("/users", methods=["GET"])
+def get_users():
+    maintenant = datetime.utcnow()
+    liste = [
+        {
+            "name": pseudo,
+            "online": (maintenant - vu) < DELAI_EN_LIGNE
+        }
+        for pseudo, vu in utilisateurs_vus.items()
+    ]
+    return jsonify(liste)
 
-    try:
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
-            contenu = f.read().strip()
-            if not contenu:
-                return {}
-            return json.loads(contenu)
-    except json.JSONDecodeError as e:
-        print(f"[ERREUR JSON] users.json mal formé : {e}")
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump({}, f)
-        return {}
-    except Exception as e:
-        print(f"[ERREUR] Lecture users.json impossible : {e}")
+
+# --- exemple d'intégration dans ta route /send existante ---
+@app.route("/send", methods=["POST"])
+def send():
+    data = request.get_json(force=True)
+    pseudo = data.get("from")
+    texte = data.get("text")
+
+    marquer_actif(pseudo)  # <-- ligne à ajouter dans ta route /send actuelle
+
+    # ... ta logique existante pour stocker/renvoyer le message ...
+    return jsonify({"success": True})
+
+
+if __name__ == "__main__":
+    app.run(debug=True)        print(f"[ERREUR] Lecture users.json impossible : {e}")
         return {}
 
 
